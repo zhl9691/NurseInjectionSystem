@@ -1,0 +1,6 @@
+{
+  "name": "护理技能教学演示系统",
+  "description": "用于连接模拟人教具的注射技能教学演示系统，采用状态机控制，实时显示进针角度与深度。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
