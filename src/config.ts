@@ -13,11 +13,15 @@ export const INJECTION_CONFIGS: Record<InjectionModeId, InjectionConfig> = {
   subcutaneous: { 
     id: 'subcutaneous', 
     name: '皮下注射', 
-    targetAngle: 35, 
+    targetAngle: 45,
     angleTolerance: 5, 
     targetDepth: 12, 
     depthTolerance: 2, 
-    isShallow: true 
+    isShallow: true,
+    // 皮下注射的模拟：从轻微偏差逐步收敛，并在目标附近保持小幅抖动。
+    initialAngleOffset: 8,
+    angleCorrectionRate: 0.24,
+    angleJitter: 0.4
   },
   intramuscular: { 
     id: 'intramuscular', 
@@ -31,10 +35,13 @@ export const INJECTION_CONFIGS: Record<InjectionModeId, InjectionConfig> = {
   intravenous: { 
     id: 'intravenous', 
     name: '静脉注射', 
-    targetAngle: 25, 
-    angleTolerance: 5, 
-    targetDepth: 8, 
-    depthTolerance: 1, 
-    isShallow: false 
+    targetAngle: 22.5,
+    angleTolerance: 7.5,
+    targetDepth: null,
+    depthTolerance: null,
+    isShallow: false,
+    initialAngleOffset: 8,
+    angleCorrectionRate: 0.24,
+    angleJitter: 0.5
   },
 };

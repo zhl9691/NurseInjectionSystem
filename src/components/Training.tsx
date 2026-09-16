@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { InjectionConfig } from '../types';
+import { InjectionConfig, MachineStage } from '../types';
 import { useSimulator, getStatusInfo, getMetricStatus } from '../simulator';
 import { ArrowLeft, Play, RotateCcw, Syringe, Home, RotateCw } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -11,12 +11,118 @@ interface TrainingProps {
   onBack: () => void;
 }
 
+interface IntravenousFlowVisualProps {
+  stage: MachineStage;
+  flashback: boolean;
+  progress: number;
+}
+
+function IntravenousFlowVisual({ stage, flashback, progress }: IntravenousFlowVisualProps) {
+  const angleLowered = stage === 'FLASHBACK' || stage === 'ADVANCE' || stage === 'READY';
+  const showFlashback = flashback;
+  const statusText = stage === 'DEPTH'
+    ? '针尖寻找静脉'
+    : stage === 'FLASHBACK'
+      ? '见到回血，可以继续进针'
+      : stage === 'ADVANCE'
+        ? '沿静脉推进软导管'
+        : stage === 'READY'
+          ? '导管推进完成'
+          : '准备穿刺';
+
+  return (
+    <div
+      role="img"
+      aria-label="静脉穿刺回血和导管推进示意动画"
+      className="relative mt-1 mb-3 h-32 shrink-0 overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-b from-slate-50 to-blue-50/60"
+    >
+      <div className="absolute left-8 right-8 top-1/2 h-10 -translate-y-1/2 rounded-full border border-red-200 bg-red-50 shadow-inner">
+        <motion.div
+          className="absolute inset-y-2 left-3 right-3 rounded-full bg-red-500/35"
+          animate={{ opacity: showFlashback ? [0.45, 0.8, 0.45] : 0.35 }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        {showFlashback && (
+          <motion.div
+            className="absolute inset-y-2 left-3 w-14 rounded-full bg-red-500/60"
+            initial={{ x: -10, opacity: 0 }}
+            animate={{ x: 130, opacity: [0, 1, 0.2] }}
+            transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
+          />
+        )}
+      </div>
+
+      {showFlashback && (
+        <motion.div
+          className="absolute left-[36%] top-1/2 h-1 -translate-y-1/2 rounded-full bg-blue-400/80"
+          initial={{ width: 0, opacity: 0 }}
+          animate={{ width: `${Math.max(0, Math.min(52, progress - 48))}%`, opacity: 1 }}
+          transition={{ duration: 0.45, ease: 'easeOut' }}
+        />
+      )}
+
+      <motion.div
+        className="absolute bottom-1/2 left-[36%] h-28 w-5 origin-bottom"
+        animate={{ rotate: angleLowered ? -10 : -22 }}
+        transition={{ type: 'spring', stiffness: 130, damping: 18 }}
+      >
+        <div className="absolute left-1/2 top-0 h-full w-2 -translate-x-1/2 rounded-full border border-slate-300 bg-white/75 shadow-sm" />
+        <motion.div
+          className="absolute bottom-1 left-1/2 w-1 -translate-x-1/2 rounded-full bg-red-600"
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: showFlashback ? 48 : 0, opacity: showFlashback ? 1 : 0 }}
+          transition={{ duration: 0.55, ease: 'easeOut' }}
+        />
+        <div className="absolute bottom-0 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-slate-500 shadow-sm" />
+      </motion.div>
+
+      {stage === 'FLASHBACK' && (
+        <motion.div
+          className="absolute left-[35.3%] top-[47%] h-3 w-3 rounded-full bg-red-600 shadow-[0_0_12px_rgba(220,38,38,0.5)]"
+          initial={{ scale: 0.3, opacity: 0 }}
+          animate={{ scale: [0.6, 1.2, 0.8], opacity: [0, 1, 0.8] }}
+          transition={{ duration: 0.8, repeat: Infinity, ease: 'easeOut' }}
+        />
+      )}
+
+      <AnimatePresence>
+        {stage === 'FLASHBACK' && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.35 }}
+            className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 px-4 text-center backdrop-blur-[2px]"
+          >
+            <motion.div
+              animate={{ scale: [1, 1.06, 1] }}
+              transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
+              className="text-2xl font-black tracking-widest text-red-700"
+            >
+              见到回血
+            </motion.div>
+            <div className="mt-1 text-xl font-bold tracking-wider text-slate-900">可以继续进针</div>
+            <div className="mt-2 text-xs tracking-wider text-slate-600">降低角度后缓慢推进导管</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="absolute bottom-2 left-0 right-0 text-center text-xs font-medium tracking-wider text-slate-600">
+        {statusText}
+      </div>
+    </div>
+  );
+}
+
 export function Training({ config, onBack }: TrainingProps) {
   const { state, startSimulation, resetSimulation } = useSimulator(config);
   const [showSuccess, setShowSuccess] = useState(false);
+  const isIntravenous = config.id === 'intravenous';
   
   const statusInfo = getStatusInfo(state.stage, state.angle, state.depth, config);
-  const angleStatus = getMetricStatus(state.angle, config.targetAngle, config.angleTolerance, false);
+  const angleStatus = isIntravenous && state.flashback
+    ? { color: 'text-blue-700', barColor: 'bg-blue-500' }
+    : getMetricStatus(state.angle, config.targetAngle, config.angleTolerance, false);
   const depthStatus = getMetricStatus(state.depth, config.targetDepth, config.depthTolerance, true);
 
   const handleInject = useCallback(() => {
@@ -59,7 +165,7 @@ export function Training({ config, onBack }: TrainingProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className={`h-screen overflow-hidden bg-[#050B14] text-slate-200 flex flex-col p-4 relative ${state.stage === 'IDLE' ? 'cursor-pointer' : ''}`}
+      className={`h-screen overflow-hidden bg-slate-100 text-slate-800 flex flex-col p-4 relative ${state.stage === 'IDLE' ? 'cursor-pointer' : ''}`}
       onClick={() => {
         if (state.stage === 'IDLE' && !showSuccess) {
           startSimulation();
@@ -72,23 +178,23 @@ export function Training({ config, onBack }: TrainingProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-[#050B14]/90 backdrop-blur-sm flex items-center justify-center p-6"
+            className="fixed inset-0 z-50 bg-slate-100/90 backdrop-blur-sm flex items-center justify-center p-6"
           >
             <motion.div 
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              className="bg-slate-900 border border-slate-800 rounded-3xl p-10 flex flex-col items-center justify-center max-w-lg w-full shadow-2xl"
+              className="bg-white border border-slate-200 rounded-3xl p-10 flex flex-col items-center justify-center max-w-lg w-full shadow-2xl"
             >
               <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6">
                 <Syringe className="w-10 h-10 text-green-500" />
               </div>
-              <h2 className="text-3xl font-bold text-white mb-2 tracking-widest text-center">恭喜你完成注射</h2>
-              <p className="text-slate-400 mb-10 tracking-wider text-center">系统检测到各项指标均符合规范标准</p>
+              <h2 className="text-3xl font-bold text-slate-900 mb-2 tracking-widest text-center">恭喜你完成注射</h2>
+              <p className="text-slate-600 mb-10 tracking-wider text-center">系统检测到各项指标均符合规范标准</p>
               
               <div className="flex flex-col sm:flex-row w-full gap-4">
                 <button
                   onClick={(e) => { e.stopPropagation(); onBack(); }}
-                  className="flex-1 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all bg-slate-800 hover:bg-slate-700 text-white tracking-widest"
+                  className="flex-1 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all bg-slate-200 hover:bg-slate-300 text-slate-800 tracking-widest"
                 >
                   <Home className="w-5 h-5" />
                   回到主页面
@@ -106,15 +212,15 @@ export function Training({ config, onBack }: TrainingProps) {
         )}
       </AnimatePresence>
 
-      <header className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4 shrink-0">
+      <header className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4 shrink-0">
         <button 
           onClick={(e) => { e.stopPropagation(); onBack(); }}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors tracking-wider"
+          className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors tracking-wider"
         >
           <ArrowLeft className="w-5 h-5" />
           返回首页
         </button>
-        <h1 className="text-xl font-bold text-white tracking-widest">{config.name} - 监测面板</h1>
+        <h1 className="text-xl font-bold text-slate-900 tracking-widest">{config.name} - 监测面板</h1>
         <div className="w-28" /> {/* Spacer for centering */}
       </header>
 
@@ -122,24 +228,24 @@ export function Training({ config, onBack }: TrainingProps) {
         {/* Left Column: Metrics */}
         <div className="lg:col-span-2 flex flex-col gap-4 min-h-0">
           {/* Angle Panel */}
-          <div className="flex-1 bg-slate-900/40 border border-slate-800 rounded-2xl p-6 flex flex-col relative overflow-hidden min-h-[220px]">
+          <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 flex flex-col relative overflow-hidden min-h-[220px] shadow-sm">
             <h2 className="text-slate-500 text-sm tracking-[0.2em] mb-2 shrink-0">CURRENT ANGLE (当前角度)</h2>
             <div className="flex items-end gap-3 mb-4 shrink-0">
               <span className={`text-6xl font-light tabular-nums tracking-tighter ${angleStatus.color}`}>
                 {state.angle !== null ? state.angle.toFixed(2) : '--'}
               </span>
-              <span className="text-2xl text-slate-600 mb-1 font-sans">°</span>
+              <span className="text-2xl text-slate-500 mb-1 font-sans">°</span>
             </div>
             
             {/* Visual Bar for Angle */}
-            <div className="mt-auto relative w-full h-8 shrink-0 bg-slate-950/80 rounded-xl border border-slate-800/80 overflow-hidden shadow-inner">
-              <div className="absolute inset-0 flex items-center justify-between px-4 text-xs text-slate-600 font-sans font-medium z-10 pointer-events-none">
+            <div className="mt-auto relative w-full h-8 shrink-0 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden shadow-inner">
+              <div className="absolute inset-0 flex items-center justify-between px-4 text-xs text-slate-500 font-sans font-medium z-10 pointer-events-none">
                 <span>0°</span>
                 <span>90°</span>
               </div>
               {/* Target Zone Marker */}
               <div 
-                className="absolute top-0 bottom-0 bg-slate-800 border-x border-slate-600/50"
+                className="absolute top-0 bottom-0 bg-slate-200 border-x border-slate-300/50"
                 style={{ 
                   left: `${Math.max(0, ((config.targetAngle - config.angleTolerance) / 90) * 100)}%`,
                   width: `${(config.angleTolerance * 2 / 90) * 100}%` 
@@ -155,35 +261,49 @@ export function Training({ config, onBack }: TrainingProps) {
             </div>
             <div className="text-xs text-slate-500 mt-3 flex justify-between tracking-wider shrink-0">
               <span>实时读数: {state.angle !== null ? state.angle.toFixed(2) + '°' : '--'}</span>
-              <span>标准靶区: {config.targetAngle}° ±{config.angleTolerance}°</span>
+              <span>{isIntravenous && state.flashback ? '回血后：降低角度推进' : isIntravenous ? '参考范围: 15–30°' : `标准靶区: ${config.targetAngle}° ±${config.angleTolerance}°`}</span>
             </div>
           </div>
 
           {/* Depth Panel */}
-          <div className="flex-1 bg-slate-900/40 border border-slate-800 rounded-2xl p-6 flex flex-col relative overflow-hidden min-h-[220px]">
-            <h2 className="text-slate-500 text-sm tracking-[0.2em] mb-2 shrink-0">CURRENT DEPTH (当前深度)</h2>
+          <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 flex flex-col relative overflow-hidden min-h-[220px] shadow-sm">
+            <h2 className="text-slate-500 text-sm tracking-[0.2em] mb-2 shrink-0">
+              {isIntravenous ? 'CATHETER PROGRESS (导管推进)' : config.id === 'subcutaneous' ? 'REFERENCE DEPTH (模拟深度)' : 'CURRENT DEPTH (当前深度)'}
+            </h2>
+            {isIntravenous && (
+              <IntravenousFlowVisual
+                stage={state.stage}
+                flashback={state.flashback}
+                progress={state.progress}
+              />
+            )}
             <div className="flex items-end gap-3 mb-4 shrink-0">
               <span className={`text-6xl font-light tabular-nums tracking-tighter ${depthStatus.color}`}>
-                {state.depth !== null ? state.depth.toFixed(2) : '--'}
+                {isIntravenous ? state.progress : state.depth !== null ? state.depth.toFixed(2) : '--'}
               </span>
-              <span className="text-2xl text-slate-600 mb-1 font-sans">mm</span>
+              <span className="text-2xl text-slate-500 mb-1 font-sans">{isIntravenous ? '%' : 'mm'}</span>
             </div>
             
             {/* Visual Bar for Depth */}
-            <div className="mt-auto relative w-full h-8 shrink-0 bg-slate-950/80 rounded-xl border border-slate-800/80 overflow-hidden shadow-inner">
-              <div className="absolute inset-0 flex items-center justify-between px-4 text-xs text-slate-600 font-sans font-medium z-10 pointer-events-none">
-                <span>0mm</span>
-                <span>40mm</span>
+            <div className="mt-auto relative w-full h-8 shrink-0 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden shadow-inner">
+              <div className="absolute inset-0 flex items-center justify-between px-4 text-xs text-slate-500 font-sans font-medium z-10 pointer-events-none">
+                {isIntravenous ? <><span>见回血</span><span>推进完成</span></> : <><span>0mm</span><span>40mm</span></>}
               </div>
               {/* Target Zone Marker */}
-              <div 
-                className="absolute top-0 bottom-0 bg-slate-800 border-x border-slate-600/50"
+              {!isIntravenous && config.targetDepth !== null && config.depthTolerance !== null && <div
+                className="absolute top-0 bottom-0 bg-slate-200 border-x border-slate-300/50"
                 style={{ 
                   left: `${Math.max(0, ((config.targetDepth - config.depthTolerance) / 40) * 100)}%`,
                   width: `${(config.depthTolerance * 2 / 40) * 100}%` 
                 }}
-              />
-              {state.depth !== null && (
+              />}
+              {isIntravenous ? (
+                <motion.div
+                  className="absolute top-0 bottom-0 w-1.5 bg-blue-500 shadow-[0_0_12px_currentColor] z-20"
+                  style={{ left: `${Math.min(100, state.progress)}%` }}
+                  transition={{ type: 'spring', bounce: 0, duration: 0.1 }}
+                />
+              ) : state.depth !== null && (
                 <motion.div 
                   className={`absolute top-0 bottom-0 w-1.5 ${depthStatus.barColor} shadow-[0_0_12px_currentColor] z-20`}
                   style={{ left: `${Math.min(100, (state.depth / 40) * 100)}%` }}
@@ -192,8 +312,7 @@ export function Training({ config, onBack }: TrainingProps) {
               )}
             </div>
             <div className="text-xs text-slate-500 mt-3 flex justify-between tracking-wider shrink-0">
-              <span>实时读数: {state.depth !== null ? state.depth.toFixed(2) + 'mm' : '--'}</span>
-              <span>标准靶区: {config.targetDepth}mm ±{config.depthTolerance}mm</span>
+              {isIntravenous ? <><span>{state.flashback ? '状态: 已见回血' : '状态: 等待回血'}</span><span>回血后降低角度推进导管</span></> : <><span>实时读数: {state.depth !== null ? state.depth.toFixed(2) + 'mm' : '--'}</span><span>{config.id === 'subcutaneous' ? '模拟参考范围' : '标准靶区'}: {config.targetDepth}mm ±{config.depthTolerance}mm</span></>}
             </div>
           </div>
         </div>
@@ -214,11 +333,11 @@ export function Training({ config, onBack }: TrainingProps) {
           </div>
 
           {/* Controls */}
-          <div className="shrink-0 bg-slate-900/40 border border-slate-800 rounded-2xl p-5 flex flex-col gap-3">
+          <div className="shrink-0 bg-white border border-slate-200 rounded-2xl p-5 flex flex-col gap-3 shadow-sm">
             <h2 className="text-slate-500 text-sm tracking-[0.2em] mb-1">CONTROLS</h2>
             <button
               onClick={(e) => { e.stopPropagation(); resetSimulation(); }}
-              className="w-full py-3 rounded-xl font-bold flex items-center justify-center gap-3 transition-all bg-slate-800/80 hover:bg-slate-700 text-slate-300 tracking-widest"
+              className="w-full py-3 rounded-xl font-bold flex items-center justify-center gap-3 transition-all bg-slate-200 hover:bg-slate-300 text-slate-700 tracking-widest"
             >
               <RotateCcw className="w-5 h-5" />
               重置系统

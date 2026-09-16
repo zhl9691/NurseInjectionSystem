@@ -17,11 +17,11 @@ export function Home({ onSelectMode }: HomeProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="h-screen overflow-hidden bg-[#050B14] text-slate-200 flex flex-col items-center justify-center p-4"
+      className="h-screen overflow-hidden bg-slate-100 text-slate-800 flex flex-col items-center justify-center p-4"
     >
       <div className="max-w-4xl w-full">
         <div className="flex flex-col items-center gap-4 mb-10 justify-center">
-          <div className="w-20 h-20 bg-blue-500/10 rounded-2xl border border-blue-500/30 flex items-center justify-center overflow-hidden p-2">
+          <div className="w-20 h-20 bg-blue-50 rounded-2xl border border-blue-200 flex items-center justify-center overflow-hidden p-2 shadow-sm">
             {!imgError ? (
               <img 
                 src="/logo.png" 
@@ -30,10 +30,10 @@ export function Home({ onSelectMode }: HomeProps) {
                 onError={() => setImgError(true)}
               />
             ) : (
-              <Activity className="w-10 h-10 text-blue-500" />
+              <Activity className="w-10 h-10 text-blue-600" />
             )}
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-widest text-white text-center">药物注射教学训练系统</h1>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-widest text-slate-900 text-center">药物注射教学训练系统</h1>
           <p className="text-slate-500 tracking-wider">MEDICATION INJECTION TRAINING SYSTEM</p>
         </div>
         
@@ -44,16 +44,16 @@ export function Home({ onSelectMode }: HomeProps) {
               <button
                 key={modeId}
                 onClick={() => onSelectMode(modeId)}
-                className="group relative flex flex-col items-center p-6 bg-slate-900/50 border border-slate-800 rounded-2xl hover:border-blue-500/50 hover:bg-slate-800/80 transition-all duration-300"
+                className="group relative flex flex-col items-center p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-blue-300 hover:bg-blue-50/60 transition-all duration-300"
               >
                 <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity" />
-                <h2 className="text-xl font-bold tracking-widest text-slate-100 mb-2">{config.name}</h2>
-                <div className="flex gap-4 text-slate-400 text-xs mt-3">
-                  <span className="bg-slate-950 px-4 py-1.5 rounded-full border border-slate-800 tracking-wider">
-                    角度: {config.targetAngle}°
+                <h2 className="text-xl font-bold tracking-widest text-slate-800 mb-2">{config.name}</h2>
+                <div className="flex gap-4 text-slate-600 text-xs mt-3">
+                  <span className="bg-slate-100 px-4 py-1.5 rounded-full border border-slate-200 tracking-wider">
+                    角度: {modeId === 'intravenous' ? '15–30°' : `${config.targetAngle}°`}
                   </span>
-                  <span className="bg-slate-950 px-4 py-1.5 rounded-full border border-slate-800 tracking-wider">
-                    深度: {config.targetDepth}mm
+                  <span className="bg-slate-100 px-4 py-1.5 rounded-full border border-slate-200 tracking-wider">
+                    {modeId === 'subcutaneous' ? '模拟深度: 12mm' : modeId === 'intravenous' ? '见回血后推进导管' : `深度: ${config.targetDepth}mm`}
                   </span>
                 </div>
               </button>

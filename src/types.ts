@@ -5,9 +5,13 @@ export interface InjectionConfig {
   name: string;
   targetAngle: number;
   angleTolerance: number;
-  targetDepth: number; // mm
-  depthTolerance: number; // mm
+  targetDepth: number | null; // mm; IV uses flashback/catheter advancement instead of a fixed depth
+  depthTolerance: number | null; // mm
   isShallow: boolean;
+  // Optional motion parameters used by the simulator to model angle correction.
+  initialAngleOffset?: number;
+  angleCorrectionRate?: number;
+  angleJitter?: number;
 }
 
-export type MachineStage = 'IDLE' | 'CONTACT' | 'ANGLE' | 'DEPTH' | 'READY';
+export type MachineStage = 'IDLE' | 'CONTACT' | 'ANGLE' | 'DEPTH' | 'FLASHBACK' | 'ADVANCE' | 'READY';
