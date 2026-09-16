@@ -13,7 +13,8 @@ export const INJECTION_CONFIGS: Record<InjectionModeId, InjectionConfig> = {
   subcutaneous: { 
     id: 'subcutaneous', 
     name: '皮下注射', 
-    targetAngle: 45,
+    // 教学模拟以 35° 为中心，30–40° 均判定为合格。
+    targetAngle: 35,
     angleTolerance: 5, 
     targetDepth: 12, 
     depthTolerance: 2, 

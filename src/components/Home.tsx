@@ -50,7 +50,7 @@ export function Home({ onSelectMode }: HomeProps) {
                 <h2 className="text-xl font-bold tracking-widest text-slate-800 mb-2">{config.name}</h2>
                 <div className="flex gap-4 text-slate-600 text-xs mt-3">
                   <span className="bg-slate-100 px-4 py-1.5 rounded-full border border-slate-200 tracking-wider">
-                    角度: {modeId === 'intravenous' ? '15–30°' : `${config.targetAngle}°`}
+                    角度: {modeId === 'intravenous' ? '15–30°' : modeId === 'subcutaneous' ? '30–40°' : `${config.targetAngle}°`}
                   </span>
                   <span className="bg-slate-100 px-4 py-1.5 rounded-full border border-slate-200 tracking-wider">
                     {modeId === 'subcutaneous' ? '模拟深度: 12mm' : modeId === 'intravenous' ? '见回血后推进导管' : `深度: ${config.targetDepth}mm`}

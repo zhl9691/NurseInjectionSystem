@@ -261,7 +261,7 @@ export function Training({ config, onBack }: TrainingProps) {
             </div>
             <div className="text-xs text-slate-500 mt-3 flex justify-between tracking-wider shrink-0">
               <span>实时读数: {state.angle !== null ? state.angle.toFixed(2) + '°' : '--'}</span>
-              <span>{isIntravenous && state.flashback ? '回血后：降低角度推进' : isIntravenous ? '参考范围: 15–30°' : `标准靶区: ${config.targetAngle}° ±${config.angleTolerance}°`}</span>
+              <span>{isIntravenous && state.flashback ? '回血后：降低角度推进' : isIntravenous ? '参考范围: 15–30°' : config.id === 'subcutaneous' ? '参考范围: 30–40°' : `标准靶区: ${config.targetAngle}° ±${config.angleTolerance}°`}</span>
             </div>
           </div>
 
