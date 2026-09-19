@@ -17,6 +17,66 @@ interface IntravenousFlowVisualProps {
   progress: number;
 }
 
+interface AngleVisualProps {
+  angle: number | null;
+  targetAngle: number;
+  tolerance: number;
+}
+
+function AngleVisual({ angle, targetAngle, tolerance }: AngleVisualProps) {
+  const displayAngle = Math.max(0, Math.min(90, angle ?? 0));
+  const originX = 20;
+  const originY = 108;
+  const needleLength = 142;
+  const radians = (displayAngle * Math.PI) / 180;
+  const tipX = originX + needleLength * Math.cos(radians);
+  const tipY = originY - needleLength * Math.sin(radians);
+
+  const getTargetPoint = (target: number) => {
+    const targetRadians = (Math.max(0, Math.min(90, target)) * Math.PI) / 180;
+    return {
+      x: originX + 72 * Math.cos(targetRadians),
+      y: originY - 72 * Math.sin(targetRadians),
+    };
+  };
+
+  const targetStart = getTargetPoint(targetAngle - tolerance);
+  const targetEnd = getTargetPoint(targetAngle + tolerance);
+
+  return (
+    <div
+      role="img"
+      aria-label={angle === null ? '等待角度读数' : `当前角度 ${angle.toFixed(2)} 度`}
+      className="relative h-24 w-40 shrink-0 overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-slate-50 to-blue-50/70 sm:h-28 sm:w-52"
+    >
+      <svg viewBox="0 0 190 120" className="h-full w-full" aria-hidden="true">
+        <path d="M 76 108 A 56 56 0 0 0 20 52" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="3 4" />
+        <line x1="20" y1="108" x2="176" y2="108" stroke="#94a3b8" strokeWidth="2" />
+        <line x1={originX} y1={originY} x2={targetStart.x} y2={targetStart.y} stroke="#86efac" strokeWidth="2" strokeDasharray="4 4" />
+        <line x1={originX} y1={originY} x2={targetEnd.x} y2={targetEnd.y} stroke="#86efac" strokeWidth="2" strokeDasharray="4 4" />
+        <motion.line
+          x1={originX}
+          y1={originY}
+          animate={{ x2: tipX, y2: tipY, opacity: angle === null ? 0.25 : 1 }}
+          initial={false}
+          transition={{ type: 'spring', stiffness: 110, damping: 18 }}
+          stroke="#2563eb"
+          strokeWidth="5"
+          strokeLinecap="round"
+        />
+        <circle cx={originX} cy={originY} r="6" fill="#1d4ed8" />
+        <circle cx={originX} cy={originY} r="2.5" fill="white" />
+        <text x="22" y="118" fill="#64748b" fontSize="9">0°</text>
+        <text x="6" y="48" fill="#64748b" fontSize="9">90°</text>
+      </svg>
+      <div className="absolute right-3 top-2 rounded-full border border-blue-200 bg-white/90 px-3 py-1 text-sm font-bold tabular-nums text-blue-700 shadow-sm">
+        {angle === null ? '--°' : `${angle.toFixed(1)}°`}
+      </div>
+      <div className="absolute bottom-2 right-3 text-[10px] tracking-wider text-slate-500">实时角度示意</div>
+    </div>
+  );
+}
+
 function IntravenousFlowVisual({ stage, flashback, progress }: IntravenousFlowVisualProps) {
   const angleLowered = stage === 'FLASHBACK' || stage === 'ADVANCE' || stage === 'READY';
   const showFlashback = flashback;
@@ -165,7 +225,7 @@ export function Training({ config, onBack }: TrainingProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className={`h-screen overflow-hidden bg-slate-100 text-slate-800 flex flex-col p-4 relative ${state.stage === 'IDLE' ? 'cursor-pointer' : ''}`}
+      className={`relative flex min-h-screen flex-col overflow-y-auto bg-slate-100 p-4 text-slate-800 lg:h-screen lg:overflow-hidden ${state.stage === 'IDLE' ? 'cursor-pointer' : ''}`}
       onClick={() => {
         if (state.stage === 'IDLE' && !showSuccess) {
           startSimulation();
@@ -224,17 +284,24 @@ export function Training({ config, onBack }: TrainingProps) {
         <div className="w-28" /> {/* Spacer for centering */}
       </header>
 
-      <main className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 max-w-7xl mx-auto w-full mt-2 min-h-0">
+      <main className="grid w-full max-w-7xl flex-none grid-cols-1 gap-4 mx-auto mt-2 lg:min-h-0 lg:flex-1 lg:grid-cols-3">
         {/* Left Column: Metrics */}
         <div className="lg:col-span-2 flex flex-col gap-4 min-h-0">
           {/* Angle Panel */}
-          <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 flex flex-col relative overflow-hidden min-h-[220px] shadow-sm">
+          <div className="relative flex min-h-[250px] flex-none flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:flex-1">
             <h2 className="text-slate-500 text-sm tracking-[0.2em] mb-2 shrink-0">CURRENT ANGLE (当前角度)</h2>
-            <div className="flex items-end gap-3 mb-4 shrink-0">
-              <span className={`text-6xl font-light tabular-nums tracking-tighter ${angleStatus.color}`}>
-                {state.angle !== null ? state.angle.toFixed(2) : '--'}
-              </span>
-              <span className="text-2xl text-slate-500 mb-1 font-sans">°</span>
+            <div className="mb-4 flex min-h-24 shrink-0 flex-row items-center justify-between gap-2 sm:min-h-28 sm:gap-4">
+              <div className="flex items-end gap-3">
+                <span className={`text-5xl font-light tabular-nums tracking-tighter sm:text-6xl ${angleStatus.color}`}>
+                  {state.angle !== null ? state.angle.toFixed(2) : '--'}
+                </span>
+                <span className="text-2xl text-slate-500 mb-1 font-sans">°</span>
+              </div>
+              <AngleVisual
+                angle={state.angle}
+                targetAngle={config.targetAngle}
+                tolerance={config.angleTolerance}
+              />
             </div>
             
             {/* Visual Bar for Angle */}
@@ -266,9 +333,9 @@ export function Training({ config, onBack }: TrainingProps) {
           </div>
 
           {/* Depth Panel */}
-          <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 flex flex-col relative overflow-hidden min-h-[220px] shadow-sm">
+          <div className="relative flex min-h-[220px] flex-none flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:flex-1">
             <h2 className="text-slate-500 text-sm tracking-[0.2em] mb-2 shrink-0">
-              {isIntravenous ? 'CATHETER PROGRESS (导管推进)' : config.id === 'subcutaneous' ? 'REFERENCE DEPTH (模拟深度)' : 'CURRENT DEPTH (当前深度)'}
+              {isIntravenous ? 'CATHETER PROGRESS (导管推进)' : 'SIMULATED DEPTH (模拟深度)'}
             </h2>
             {isIntravenous && (
               <IntravenousFlowVisual
@@ -312,7 +379,7 @@ export function Training({ config, onBack }: TrainingProps) {
               )}
             </div>
             <div className="text-xs text-slate-500 mt-3 flex justify-between tracking-wider shrink-0">
-              {isIntravenous ? <><span>{state.flashback ? '状态: 已见回血' : '状态: 等待回血'}</span><span>回血后降低角度推进导管</span></> : <><span>实时读数: {state.depth !== null ? state.depth.toFixed(2) + 'mm' : '--'}</span><span>{config.id === 'subcutaneous' ? '模拟参考范围' : '标准靶区'}: {config.targetDepth}mm ±{config.depthTolerance}mm</span></>}
+              {isIntravenous ? <><span>{state.flashback ? '状态: 已见回血' : '状态: 等待回血'}</span><span>回血后降低角度推进导管</span></> : <><span>模拟读数: {state.depth !== null ? state.depth.toFixed(2) + 'mm' : '--'}</span><span>模拟参考范围: {config.targetDepth}mm ±{config.depthTolerance}mm</span></>}
             </div>
           </div>
         </div>

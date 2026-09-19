@@ -53,7 +53,7 @@ export function Home({ onSelectMode }: HomeProps) {
                     角度: {modeId === 'intravenous' ? '15–30°' : modeId === 'subcutaneous' ? '30–40°' : `${config.targetAngle}°`}
                   </span>
                   <span className="bg-slate-100 px-5 py-2 md:px-6 md:py-2.5 rounded-full border border-slate-200 tracking-wider">
-                    {modeId === 'subcutaneous' ? '模拟深度: 12mm' : modeId === 'intravenous' ? '见回血后推进导管' : `深度: ${config.targetDepth}mm`}
+                    {modeId === 'intravenous' ? '见回血后推进导管' : `模拟深度: ${config.targetDepth}mm`}
                   </span>
                 </div>
               </button>

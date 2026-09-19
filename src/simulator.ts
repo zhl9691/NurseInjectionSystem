@@ -259,10 +259,10 @@ export function getStatusInfo(stage: MachineStage, angle: number | null, depth: 
   }
 
   if (stage === 'DEPTH') {
-    if (depthError === 'TOO_DEEP') return { text: '⚠ 进针过深', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200' };
-    if (depthError === 'TOO_SHALLOW') return { text: '深度检测中……', color: 'text-yellow-700', bg: 'bg-yellow-50', border: 'border-yellow-200' };
+    if (depthError === 'TOO_DEEP') return { text: '⚠ 模拟深度过深', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200' };
+    if (depthError === 'TOO_SHALLOW') return { text: '模拟深度检测中……', color: 'text-yellow-700', bg: 'bg-yellow-50', border: 'border-yellow-200' };
     
-    return { text: '✓ 深度正常', color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-200' };
+    return { text: '✓ 模拟深度正常', color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-200' };
   }
 
   return { text: '检测中……', color: 'text-yellow-700', bg: 'bg-yellow-50', border: 'border-yellow-200' };
